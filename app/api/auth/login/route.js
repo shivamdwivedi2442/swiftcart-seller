@@ -42,7 +42,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "Your account has been suspended. Contact admin." }, { status: 403 });
     }
 
-    if (!partner.code) {
+    if (!partner.sellerCode) {
       return NextResponse.json({ success: false, error: "Please activate your account first." }, { status: 403 });
     }
 
