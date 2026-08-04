@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   otpExpiry: { type: Date },
   failedLoginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
+  activationCode: { type: String, default: null },        // ✅ यह होनी जरूरी है
+  activationCodeExpiry: { type: Date, default: null },
 }, { timestamps: true, strict: false });
 
 export default mongoose.models.User || mongoose.model("User", userSchema);
