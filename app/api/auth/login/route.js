@@ -16,13 +16,13 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "All fields are required." }, { status: 400 });
     }
 
-    const partner = await User.findOne({ email });
-    if (!partner) {
+    const user = await User.findOne({ email, role: "seller" }); // ✅ role filter bhi wapas laga diya (safety)
+    if (!user) {
       return NextResponse.json({ success: false, error: "Invalid account." }, { status: 401 });
     }
 
-    if (partner.lockUntil && partner.lockUntil > new Date()) {
-      const minutesLeft = Math.ceil((partner.lockUntil - new Date()) / 60000);
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockUntil - new Date()) / 60000);
       return NextResponse.json({
         success: false,
         error: `Too many failed attempts. Try again in ${minutesLeft} minute(s), or verify via OTP to unlock now.`,
@@ -30,31 +30,31 @@ export async function POST(req) {
       }, { status: 429 });
     }
 
-    if (!partner.isVerified) {
+    if (!user.isVerified) {
       return NextResponse.json({ success: false, error: "Please verify your email first." }, { status: 401 });
     }
 
-    if (partner.accountStatus === "pending") {
+    if (user.accountStatus === "pending") {
       return NextResponse.json({ success: false, error: "Your account is awaiting admin approval." }, { status: 403 });
     }
 
-    if (partner.accountStatus === "banned") {
+    if (user.accountStatus === "banned") {
       return NextResponse.json({ success: false, error: "Your account has been suspended. Contact admin." }, { status: 403 });
     }
 
-    if (!partner.code) {
+    if (!user.sellerCode) { // ✅ Fix: code nahi, sellerCode
       return NextResponse.json({ success: false, error: "Please activate your account first." }, { status: 403 });
     }
 
-    const isMatch = await bcrypt.compare(password, partner.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      partner.failedLoginAttempts += 1;
-      if (partner.failedLoginAttempts >= MAX_ATTEMPTS) {
-        partner.lockUntil = new Date(Date.now() + LOCK_TIME);
+      user.failedLoginAttempts += 1;
+      if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
+        user.lockUntil = new Date(Date.now() + LOCK_TIME);
       }
-      await partner.save();
+      await user.save();
 
-      const attemptsLeft = MAX_ATTEMPTS - partner.failedLoginAttempts;
+      const attemptsLeft = MAX_ATTEMPTS - user.failedLoginAttempts;
       return NextResponse.json({
         success: false,
         error: attemptsLeft > 0
@@ -63,13 +63,13 @@ export async function POST(req) {
       }, { status: 401 });
     }
 
-    partner.failedLoginAttempts = 0;
-    partner.lockUntil = null;
-    await partner.save();
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
 
-    const token = jwt.sign({ partnerId: partner._id, name: partner.name }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ userId: user._id, name: user.name }, process.env.JWT_SECRET, { expiresIn: "30d" }); // ✅ Fix: userId, partnerId nahi
 
-    const response = NextResponse.json({ success: true, message: `Welcome, ${partner.name}!` });
+    const response = NextResponse.json({ success: true, message: `Welcome, ${user.name}!` });
     response.cookies.set("seller_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

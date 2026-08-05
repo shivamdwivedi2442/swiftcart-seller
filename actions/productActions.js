@@ -2,7 +2,7 @@
 
 import { connectDB } from "@/lib/db";
 import Product from "@/models/Product";
-import User from "@/models/User"; // populate ke liye zaroori
+import User from "@/models/User";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { revalidatePath } from "next/cache";
@@ -17,42 +17,6 @@ async function getSellerId() {
     return decoded.userId;
   } catch {
     return null;
-  }
-}
-
-export async function addProduct(formData) {
-  try {
-    await connectDB();
-    const sellerId = await getSellerId();
-    if (!sellerId) return { success: false, error: "Please login first." };
-
-    const name = formData.get("name");
-    const description = formData.get("description");
-    const price = formData.get("price");
-    const category = formData.get("category");
-    const stock = formData.get("stock");
-    const image = formData.get("image");
-
-    if (!name || !price || !image || !category || !stock) {
-      return { success: false, error: "Please fill all required fields." };
-    }
-
-    await Product.create({
-      name,
-      description,
-      price: Number(price),
-      category,
-      stock: Number(stock),
-      image,
-      seller: sellerId,
-      status: "pending",
-    });
-
-    revalidatePath("/dashboard/products");
-    return { success: true, message: "Product added! Waiting for admin approval." };
-  } catch (error) {
-    console.error("Add Product Error:", error);
-    return { success: false, error: "Internal Server Error" };
   }
 }
 
@@ -91,5 +55,41 @@ export async function getSellerProducts() {
   } catch (error) {
     console.error("Fetch Products Error:", error);
     return { success: false, products: [] };
+  }
+}
+
+export async function addProduct(formData) {
+  try {
+    await connectDB();
+    const sellerId = await getSellerId();
+    if (!sellerId) return { success: false, error: "Please login first." };
+
+    const name = formData.get("name");
+    const description = formData.get("description");
+    const price = formData.get("price");
+    const category = formData.get("category");
+    const stock = formData.get("stock");
+    const image = formData.get("image");
+
+    if (!name || !price || !image || !category || !stock) {
+      return { success: false, error: "Please fill all required fields." };
+    }
+
+    await Product.create({
+      name,
+      description,
+      price: Number(price),
+      category,
+      stock: Number(stock),
+      image,
+      seller: sellerId,
+      status: "approved",
+    });
+
+    revalidatePath("/dashboard/products");
+    return { success: true, message: "Product added successfully!" };
+  } catch (error) {
+    console.error("Add Product Error:", error);
+    return { success: false, error: "Internal Server Error" };
   }
 }

@@ -4,7 +4,7 @@ import User from "@/models/User";
 import crypto from "crypto";
 
 function generateLoginCode() {
-  return `DEL${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+  return `SELL${crypto.randomBytes(3).toString("hex").toUpperCase()}`; // ✅ SELL bhi kar diya, DEL galat tha Seller App ke liye
 }
 
 export async function POST(req) {
@@ -12,18 +12,13 @@ export async function POST(req) {
     await connectDB();
     const { email, activationCode } = await req.json();
 
-    console.log("Received:", email, activationCode); // ✅ Debug line
-
-    const seller = await User.findOne({ email });
-
-    console.log("Found Seller:", seller ? seller.email : "NOT FOUND"); // ✅ Debug line
-    console.log("DB activation code:", seller ? seller.activationCode : "NOT FOUND");// ✅ Debug line
+    const seller = await User.findOne({ email, role: "seller" });
 
     if (!seller) {
       return NextResponse.json({ success: false, error: "Account not found." }, { status: 404 });
     }
 
-    if (seller.sellercode) {
+    if (seller.sellerCode) { // ✅ Fix: capital C
       return NextResponse.json({ success: false, error: "Account already activated. Please login." }, { status: 400 });
     }
 
@@ -31,14 +26,12 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "Invalid activation code." }, { status: 400 });
     }
 
-    // ... baaki same
-
     if (new Date() > seller.activationCodeExpiry) {
       return NextResponse.json({ success: false, error: "Activation code expired. Contact admin." }, { status: 400 });
     }
 
     const loginCode = generateLoginCode();
-    seller.sellercode = loginCode;
+    seller.sellerCode = loginCode;
     seller.activationCode = undefined;
     seller.activationCodeExpiry = undefined;
     await seller.save();

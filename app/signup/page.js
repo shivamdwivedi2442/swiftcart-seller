@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Store, Loader2 } from "lucide-react";
+import { Store, Loader2, Eye, EyeOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
 
@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,12 +51,43 @@ export default function SignupPage() {
             <p className="text-slate-500 text-sm mt-1">Sign up — your account needs admin approval</p>
           </div>
         </div>
+        <input
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="Full Name"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm text-slate-900"
+        />
+        <input
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          type="email"
+          placeholder="Email"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm text-slate-900"
+        />
+        <input
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          placeholder="Phone Number"
+          maxLength={10}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm text-slate-900"
+        />
 
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full Name" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm" />
-        <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} type="email" placeholder="Email" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm" />
-        <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone Number" maxLength={10} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm" />
-        <input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} type="password" placeholder="Password" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-500 text-sm" />
-
+        <div className="relative">
+          <input
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pr-11 outline-none focus:border-indigo-500 text-sm text-slate-900"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
         <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white p-3.5 rounded-xl font-bold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
           {loading ? <Loader2 className="size-5 animate-spin" /> : "Sign Up"}
         </button>

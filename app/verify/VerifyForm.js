@@ -52,6 +52,7 @@ export default function VerifyForm() {
           onChange={(e) => setOtp(e.target.value)}
           maxLength={6}
           placeholder="Enter 6-digit OTP"
+          style={{ color: "#000000" }}
           className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center text-2xl font-bold tracking-widest outline-none focus:border-indigo-500"
         />
         <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white p-3.5 rounded-xl font-bold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
