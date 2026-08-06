@@ -6,6 +6,8 @@ import Order from "@/models/Order";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
+const DELIVERY_COMMISSION = 0.10; // ✅ Delivery partner ko jaane wala 10%
+
 async function getSellerId() {
   const cookieStore = await cookies();
   const token = cookieStore.get("seller_token")?.value;
@@ -24,15 +26,12 @@ export async function getSellerAnalytics() {
     const sellerId = await getSellerId();
     if (!sellerId) return { success: false };
 
-    // ✅ Sare seller ke products (views ke liye)
     const products = await Product.find({ seller: sellerId }).lean();
 
-    // ✅ Sare orders jinme is seller ka koi product ho (sales ke liye)
     const allOrders = await Order.find()
       .populate({ path: "items.product" })
       .lean();
 
-    // Per-product sold count aur revenue calculate karo
     const productStats = {};
     products.forEach((p) => {
       productStats[p._id.toString()] = {
@@ -56,11 +55,18 @@ export async function getSellerAnalytics() {
       order.items.forEach((item) => {
         if (item.product && item.product.seller?.toString() === sellerId.toString()) {
           const pid = item.product._id.toString();
+          const itemRevenue = item.price * item.quantity;
+
+          // ✅ Sirf "Delivered" orders par hi delivery commission katega
+          const netRevenue = order.status === "Delivered"
+            ? itemRevenue * (1 - DELIVERY_COMMISSION)
+            : itemRevenue;
+
           if (productStats[pid]) {
             productStats[pid].unitsSold += item.quantity;
-            productStats[pid].revenue += item.price * item.quantity;
+            productStats[pid].revenue += netRevenue;
           }
-          totalRevenue += item.price * item.quantity;
+          totalRevenue += netRevenue;
           totalUnitsSold += item.quantity;
           orderHasMyItem = true;
         }
@@ -75,13 +81,13 @@ export async function getSellerAnalytics() {
     return {
       success: true,
       summary: {
-        totalRevenue,
+        totalRevenue: Math.round(totalRevenue),
         totalOrders,
         totalUnitsSold,
         totalViews,
         totalProducts: products.length,
       },
-      products: productList,
+      products: productList.map((p) => ({ ...p, revenue: Math.round(p.revenue) })),
     };
   } catch (error) {
     console.error("Get Seller Analytics Error:", error);
