@@ -1,114 +1,65 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Loader2, Upload, ImageOff } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
-import { addProduct } from "@/actions/productActions";
+import { getSellerOrders } from "@/actions/orderActions";
+import OrderStatusUpdater from "@/components/OrderStatusUpdater";
+import { ClipboardList, MapPin } from "lucide-react";
 
-export default function AddProductForm() {
-  const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageError, setImageError] = useState(false);
-  const router = useRouter();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const toastId = toast.loading("Adding product...");
-
-    const formData = new FormData(e.target);
-    const res = await addProduct(formData);
-
-    if (res.success) {
-      toast.success(res.message, { id: toastId });
-      e.target.reset();
-      setImageUrl("");
-      setImageError(false);
-      setTimeout(() => router.push("/dashboard/products"), 1000);
-    } else {
-      toast.error(res.error, { id: toastId });
-    }
-    setLoading(false);
-  };
+export default async function OrdersPage() {
+  const { orders } = await getSellerOrders();
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-      <Toaster position="top-center" />
-
-      <div>
-        <label className="text-xs font-semibold text-slate-500 block mb-1">Product Name</label>
-        <input name="name" required placeholder="e.g. Wireless Headphones" className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900" />
-      </div>
-
-      <div>
-        <label className="text-xs font-semibold text-slate-500 block mb-1">Description</label>
-        <textarea name="description" rows={4} placeholder="Describe your product..." className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900 resize-none" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 block mb-1">Price (₹)</label>
-          <input name="price" type="number" required min="1" placeholder="999" className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900" />
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600">
+          <ClipboardList className="size-8" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-500 block mb-1">Stock Quantity</label>
-          <input name="stock" type="number" required min="0" placeholder="10" className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900" />
+          <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>
+          <p className="text-sm text-slate-500">Orders containing your products — pack them for delivery</p>
         </div>
       </div>
 
-      <div>
-        <label className="text-xs font-semibold text-slate-500 block mb-1">Category</label>
-        <input name="category" required placeholder="e.g. Electronics" className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900" />
-      </div>
-
-      <div>
-        <label className="text-xs font-semibold text-slate-500 block mb-1">Image URL</label>
-        <input
-          name="image"
-          type="url"
-          required
-          placeholder="https://example.com/image.jpg"
-          value={imageUrl}
-          onChange={(e) => {
-            setImageUrl(e.target.value);
-            setImageError(false);
-          }}
-          className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-sm text-slate-900"
-        />
-        <p className="text-xs text-slate-400 mt-1">Paste a direct image link (from Imgur, Cloudinary, etc.)</p>
-
-        {/* ✅ Live Preview */}
-        {imageUrl && (
-          <div className="mt-3 relative w-32 h-32 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
-            {imageError ? (
-              <div className="flex flex-col items-center gap-1 text-slate-400">
-                <ImageOff className="size-6" />
-                <span className="text-[10px]">Invalid image</span>
+      {orders.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-100 p-16 text-center">
+          <ClipboardList className="size-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">No orders yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+                <div>
+                  <p className="text-xs text-slate-400">Order #{order._id.slice(-8).toUpperCase()}</p>
+                  <p className="font-bold text-slate-800 text-sm">{order.customerName}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    {" • "}{order.paymentMethod} {order.paymentMethod === "COD" ? `(Collect ₹${order.myTotal.toLocaleString("en-IN")})` : "(Paid Online)"}
+                  </p>
+                </div>
+                <OrderStatusUpdater orderId={order._id} currentStatus={order.status} />
               </div>
-            ) : (
-              <Image
-                src={imageUrl}
-                alt="Preview"
-                fill
-                className="object-contain p-2"
-                onError={() => setImageError(true)}
-                unoptimized
-              />
-            )}
-          </div>
-        )}
-      </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2"
-      >
-        {loading ? <Loader2 className="size-5 animate-spin" /> : <Upload className="size-5" />}
-        {loading ? "Adding..." : "Add Product"}
-      </button>
-    </form>
+              <div className="space-y-2 mb-4">
+                {order.items.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm">
+                    <img src={item.image} alt={item.name} className="w-12 h-12 object-contain bg-slate-50 rounded-lg border border-slate-100" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-800">{item.name}</p>
+                      <p className="text-xs text-slate-500">Qty: {item.quantity} × ₹{item.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl">
+                <MapPin className="size-3.5 shrink-0 mt-0.5" />
+                <span>{order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pincode}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
