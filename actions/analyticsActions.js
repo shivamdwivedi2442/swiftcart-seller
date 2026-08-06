@@ -6,7 +6,7 @@ import Order from "@/models/Order";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-const DELIVERY_COMMISSION = 0.10; // ✅ Delivery partner ko jaane wala 10%
+const DELIVERY_COMMISSION = 0.10;
 
 async function getSellerId() {
   const cookieStore = await cookies();
@@ -57,7 +57,6 @@ export async function getSellerAnalytics() {
           const pid = item.product._id.toString();
           const itemRevenue = item.price * item.quantity;
 
-          // ✅ Sirf "Delivered" orders par hi delivery commission katega
           const netRevenue = order.status === "Delivered"
             ? itemRevenue * (1 - DELIVERY_COMMISSION)
             : itemRevenue;
